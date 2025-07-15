@@ -2,57 +2,66 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-## Step 2: Import Dataset and Load It
-from surprise import Dataset
-data = Dataset.load_builtin('ml-100k')
+## Step 2: Load Dataset Rating Dataset
+ratings_df = pd.read_csv("C:\\Users\ASUS\\Desktop\\MLProject\\u.data",
+    sep='\t',names=['user_id', 'item_id', 'rating', 'timestamp'],encoding='latin-1')
+ratings_df.head()
 
-## Step 3: Create Model (SVD)
-from surprise import SVD
-model = SVD()
+## Step 3:  Load Dataset Movie Dataset
+movie_df = pd.read_csv("C:\\Users\\ASUS\\Desktop\\MLProject\\u.item",
+    sep='|',encoding='latin-1',header=None,usecols=[0, 1],names=['movie_id', 'title'])
+movie_df.head()
 
-## Step 4: Split Data into Train and Test  Model Training
+## Step 4: Reader for the Surprise library
+from surprise import Dataset, Reader
+reader = Reader(rating_scale=(1, 5))
+
+## Step 5:Load data into Surprise format
+data = Dataset.load_from_df(ratings_df[['user_id', 'item_id', 'rating']], reader)
+
+## Step 6: Split the dataset into train and test
 from surprise.model_selection import train_test_split
 trainset, testset = train_test_split(data, test_size=0.2)
 
-## Step 5: Model Training on 80%
+## Step 7: Use SVD algorithm 
+from surprise import SVD
+model = SVD()
 model.fit(trainset)
 
-## Step 6: Predict on 20%
+## Step 8: Test the model on the test set
 predictions = model.test(testset)
 
-## Step 7: Evaluate the Performance of Model
-from surprise import accuracy
-accuracy.rmse(predictions)
+## Step 9: # Calculate RMSE
+from surprise import accuracy 
+rmse = accuracy.rmse(predictions)
+print(f"Model RMSE: {rmse:.4f}")
 
-## Step 8: Generate List of Items to Predict for a User
-user_id = str(196)  
-item_ids = trainset.all_items()
-item_raw_ids = [trainset.to_raw_iid(iid) for iid in item_ids]
+## step 10: Pick a sample user ID 
+user_id = str(196)
 
-## step 9: Predict Ratings for All Items 
-top_preds = [(iid, model.predict(user_id, iid).est) for iid in item_raw_ids]
-top_recommendations = sorted(top_preds, key=lambda x: x[1], reverse=True)[:5]
-for item, rating in top_recommendations:
-    print(f"Recommend item: {item}, Predicted Rating: {rating:.2f}")
+## step 11: Get list of all item_ids
+all_item_ids = set(ratings_df['item_id'].unique())
+rated_item_ids = set(ratings_df[ratings_df['user_id'] == int(user_id)]['item_id'])
 
-## step 10: Read Movie Rating Dataset
-df = "C:\\Users\\ASUS\\Desktop\\MLProject\\u.item"
-movie_df = pd.read_csv(df, sep='|', encoding='latin-1', header=None, usecols=[0, 1])
-movie_df.columns = ['movie_id', 'title']
-movie_df.head()
+## step 12: Unrated items
+unrated_items = all_item_ids - rated_item_ids
 
-## step 11: Convert movie_id to string for matching
-movie_id_to_title = dict(zip(movie_df['movie_id'].astype(str), movie_df['title']))
+## step 13: Predict ratings for unrated items
+predictions = [model.predict(user_id, str(item_id)) for item_id in unrated_items]
 
-## step 12: Print recommendations with titles
-for item, rating in top_recommendations:
-    title = movie_id_to_title.get(item, "Unknown Movie")
-    print(f"Recommend: {title} (Movie ID: {item}) → Predicted Rating: {rating:.2f}")
+## step 14: Sort by estimated rating
+top_5 = sorted(predictions, key=lambda x: x.est, reverse=True)[:5]
 
-## step 13: Plot Histogram of Ratings
-all_preds = [pred.est for pred in predictions]
-plt.hist(all_preds, bins=20, color='skyblue')
-plt.title('Distribution of Predicted Ratings')
-plt.xlabel('Predicted Rating')
-plt.ylabel('Frequency')
+## Step 15: Print recommendations
+print("Top 5 Recommendations:")
+for pred in top_5:
+    print(f"Movie ID: {pred.iid}, Predicted Rating: {pred.est:.2f}")
+
+## Step 16: Plot a Histogram 
+plt.figure(figsize=(8, 5))
+ratings_df['rating'].hist(bins=5, color='skyblue', edgecolor='black')
+plt.title('Distribution of Movie Ratings')
+plt.xlabel('Rating')
+plt.ylabel('Count')
+plt.grid(False)
 plt.show()
