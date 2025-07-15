@@ -34,4 +34,4 @@ And Finally, Plotted a histogram of all ratings using matplotlib to see the dist
 Most users gave ratings between 3 and 5, which shows a tendency toward liking movies.
 
  OUTPUT:
- <img width="1828" height="870" alt="Image" src="https://github.com/user-attachments/assets/709ea6fc-abe9-4d12-9006-5b18ad958060" />
+ <img width="1920" height="1080" alt="Image" src="https://github.com/user-attachments/assets/054b8d8e-7993-48e0-b9c5-fedd96c45951" />
